@@ -5,3 +5,5 @@ Made for educational purposes to understand how HTTP works as well as how to sen
 
 ## How to run
 In terminal type `python server.js [port]`
+
+

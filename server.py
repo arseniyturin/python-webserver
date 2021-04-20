@@ -61,7 +61,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     # Take port from command line
     port = int(sys.argv[1])
     # Bind host and port to the socket
-    s.bind(('localhost', port))
+    s.bind(('0.0.0.0', port))
     # Listen for incoming messages
     s.listen()
 
