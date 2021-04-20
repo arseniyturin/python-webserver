@@ -4,20 +4,9 @@ __author__ = "Arseniy Tyurin"
 __version__ = "0.1"
 __license__ = "MIT"
 
-## Example of HTTP GET Requst
-#
-# GET /index.html HTTP/1.1
-# Host: localhost
-#
-# Example of HTTP Response
-#
-# HTTP/1.1 200 OK
-# Content-Type: text/html; charset=utf-8
-#
-# <html>....</html>
-
 import socket
 import sys
+import datetime
 
 # Shorthand for common HTTP statuses, feel free to add more
 http_status = {
@@ -31,15 +20,20 @@ content_type = {
     'jpg': b'Content-Type: image/jpeg',
     'png': b'Content-Type: image/png',
     'css': b'Content-Type: text/css',
-    'js': b'Content-Type: text/javascript'
+    'js': b'Content-Type: text/javascript',
+    'ico': b'Content-Type: image/x-icon'
 }
 # HTTP request header lines separated by '\r\n', so we use that later
 sep = b'\r\n'
-
+# Define routes for specific file types
+# It works as alias if you want to mask the real path to the file
+routes = {
+    'html': 'html'
+}
 
 def fancy_introduction(port):
     # Confirmation that server has started
-    server = f' Python webserver v.{__version__}'
+    server = f' Python Webserver v.{__version__}'
     checkmark = b'\xe2\x9c\x93'.decode()
     status = f' Status: {checkmark}'
     addr = f' Address: http://localhost:{port}'
@@ -52,67 +46,93 @@ def fancy_introduction(port):
     print(u"\u2514" + u"\u2500" * 36 + u"\u2518")
     print('\n')
 
-# Main part where we start 'TCP' socket and listen for incoming messages
-# We create socket to tell our OS that we takeover certain port
-# and start listening for incoming messages. These messages could be anything,
-# event simple plain text, but our server will understand and react only
-# to HTTP requests
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    # Take port from command line
-    port = int(sys.argv[1])
-    # Bind host and port to the socket
-    s.bind(('0.0.0.0', port))
-    # Listen for incoming messages
-    s.listen()
 
-    fancy_introduction(port)
+def open_static(filename, mode='r'):
+    '''Opens static file and returns it\'s binary representation'''
+    try:
+        with open(filename, mode) as f:
+            data = f.read()
+            if mode == 'r': data = data.encode()
+            return data
+    except:
+        return b''
 
-    # Server is going to run until something breaks
-    while True:
-        # Client connected
-        client, addr = s.accept()
-        # Read clients message, suppose to be HTTP GET request
-        # 4096 is arbitrary, you can go as much as 65535
-        # Normally, HTTP header will fit into 4086 bytes
-        msg = client.recv(4096)
-        print(msg.decode().split("\n")[0])
-        # Request URL
-        request = msg.decode().split("\n")[0].split(' ')[1]
-        if request == '/': request = '/index.html'
-        # So far we serve HTML and JPG
-        file_type = request.split('.')[1]
-        # Load page if it exists or send 404 if not found
-        if file_type == 'html':
-            try:
-                with open('html/' + request[1:], 'r') as f:
-                    body = f.read()
-                    body = body.encode()
-                    header = http_status['200'] + sep + content_type['html'] + sep + sep
-            except:
-                    body = ''.encode()
-                    header = http_status['404']
-        # Load JPG image or send 404 if not found
-        if file_type == 'jpg':
-            try:
-                with open(request[1:], 'rb') as f:
-                    body = f.read()
-                    header = http_status['200'] + sep + content_type['jpg'] + sep + sep
-            except:
-                    body = ''.encode()
-                    header = http_status['404']
-        # Load stylesheet
-        if file_type == 'css':
-            try:
-                with open(request[1:], 'r') as f:
-                    body = f.read()
-                    body = body.encode()
-                    header = http_status['200'] + sep + content_type['css'] + sep + sep
-            except:
-                    body = ''.encode()
-                    header = http_status['404']
+def build_header(status, file_type):
+    '''Forming HTTP Header for a response, ex: HTTP/1.1 200 OK'''
+    return http_status[status] + sep + content_type[file_type] + sep + sep
 
-        # Every HTTP response contains header and body
-        response = (header + body)
-        # Sending response and closing connection
-        client.send(response)
-        client.close()
+def prepare_response(filename):
+    '''
+    Function reads a static file located on the server and returns file
+    content with appropriate header if success, otherwise throw 404 error.
+    Function supports only few file types, such as html, css and jpg
+    '''
+    if filename == '': filename = 'index.html'
+    # Get requested file type, ex index.html -> html
+    file_type = filename.split('.')[1]
+    # If route is defined, use it
+    if routes.get(file_type):
+        path = routes[file_type] + '/' + filename
+    else:
+        path = filename
+    #
+    if (file_type in ['html', 'css', 'txt']):
+        body = open_static(path, 'r')
+    else:
+        body = open_static(path, 'rb')
+
+    # If success, return header and body, otherwise throw 404
+    if body:
+        header = build_header('200', file_type)
+    else:
+        header = build_header('404', file_type)
+
+    return header + body
+
+def parse_request(request):
+    '''
+    Function parse HTTP-request and returns method,
+    file requested by the browser and protocol.
+    Since the server can process GET requests only (so far), method and protocol
+    are not used anywhere in the code, but will be useful in the future
+    '''
+    headers = request.decode().split('\r\n')
+    method, file, protocol = headers[0].split(' ')
+    return method, file[1:], protocol
+
+
+def run():
+    '''
+    Function opens socket on hostname:port and starts to listen for requests
+    '''
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+
+        # Host (0.0.0.0 means for any ip address)
+        host = '0.0.0.0'
+        # Take port from command line
+        port = int(sys.argv[1])
+        # Bind socket to the desired address
+        s.bind((host, port))
+        # Listen for incoming messages
+        s.listen()
+        # Shows introduction to the terminal
+        fancy_introduction(port)
+        # Server is going to run until something breaks
+        while True:
+            # Client connected
+            client, addr = s.accept()
+            # Read clients message (suppose to be HTTP GET request)
+            # 4096 is arbitrary, you can go as much as 65535
+            msg = client.recv(4096)
+            # if server go appropriate request -> create response
+            if msg:
+                now = datetime.datetime.today().strftime('%b %d, %Y - %H:%M:%S')
+                method, file, protocol = parse_request(msg)
+                response = prepare_response(file)
+                client.send(response)
+                client.close()
+
+                print(f'({now}) - {method} - {file}')
+
+if __name__ == '__main__':
+    run()
