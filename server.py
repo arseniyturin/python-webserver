@@ -6,6 +6,8 @@ __license__ = "MIT"
 
 import socket
 import sys
+import os
+import time
 import datetime
 
 # Shorthand for common HTTP statuses, feel free to add more
@@ -23,6 +25,7 @@ content_type = {
     'js': b'Content-Type: text/javascript',
     'ico': b'Content-Type: image/x-icon'
 }
+
 # HTTP request header lines separated by '\r\n', so we use that later
 sep = b'\r\n'
 # Define routes for specific file types
@@ -30,6 +33,7 @@ sep = b'\r\n'
 routes = {
     'html': 'html'
 }
+#Last-Modified: <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
 
 def fancy_introduction(port):
     # Confirmation that server has started
@@ -47,19 +51,32 @@ def fancy_introduction(port):
     print('\n')
 
 
-def open_static(filename, mode='r'):
+def open_static(filename, mode='rb'):
     '''Opens static file and returns it\'s binary representation'''
     try:
+        ts = os.stat(filename).st_mtime
+        last_modified = datetime.datetime \
+            .utcfromtimestamp(ts) \
+            .strftime('%a, %d %b %Y %H:%M:%S GMT')
         with open(filename, mode) as f:
             data = f.read()
-            if mode == 'r': data = data.encode()
-            return data
+            return data, last_modified
     except:
         return b''
 
-def build_header(status, file_type):
-    '''Forming HTTP Header for a response, ex: HTTP/1.1 200 OK'''
-    return http_status[status] + sep + content_type[file_type] + sep + sep
+def build_header(status, file_type, last_modified):
+    '''
+    Forming HTTP Header for a response, for example:
+
+    HTTP/1.1 200 OK\r\n
+    Content-Type: text/html\r\n
+    Last-Modified: Wed, 21 Apr 2021 14:05:46 GMT
+
+    '''
+    last_modified = f'Last-Modified: {last_modified}'.encode()
+    return http_status[status] + sep \
+        + content_type[file_type] + sep \
+        + last_modified + sep + sep
 
 def prepare_response(filename):
     '''
@@ -75,15 +92,12 @@ def prepare_response(filename):
         path = routes[file_type] + '/' + filename
     else:
         path = filename
-    #
-    if (file_type in ['html', 'css', 'txt']):
-        body = open_static(path, 'r')
-    else:
-        body = open_static(path, 'rb')
+    # Open file
+    body, last_modified = open_static(path, 'rb')
 
     # If success, return header and body, otherwise throw 404
     if body:
-        header = build_header('200', file_type)
+        header = build_header('200', file_type, last_modified)
     else:
         header = build_header('404', file_type)
 
@@ -126,13 +140,11 @@ def run():
             msg = client.recv(4096)
             # if server go appropriate request -> create response
             if msg:
-                now = datetime.datetime.today().strftime('%b %d, %Y - %H:%M:%S')
                 method, file, protocol = parse_request(msg)
                 response = prepare_response(file)
                 client.send(response)
                 client.close()
-
-                print(f'({now}) - {method} - {file}')
+                print(f'({time.ctime()}) - {method} - {file}')
 
 if __name__ == '__main__':
     run()

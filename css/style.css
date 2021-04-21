@@ -3,27 +3,55 @@ html, body {
 	padding: 0;
 	color: #444;
 	font-family: arial;
+	font-size: 14px;
+	background-color: #f0f9f9;
 }
 h1 {
-	text-align: center;
+	color: #222;
 	font-size: 24px;
-	font-weight: 400;
+	font-weight: 600;
 }
-#menu {
-	text-align: center;
-	padding: 10px 0;
+h2 {
+	color: #222;
+	font-size: 21px;
+	font-weight: 600;
 }
-#menu a {
-	margin: 0 2px;
-	color: #333;
-	text-decoration: none;
-	padding: 6px 12px;
+p {
+	line-height: 23px;
+}
+.two_columns {
+	display: flex;
+}
+.column {
+	flex: 50%;
+	padding: 20px;
+}
+#content {
+	margin: 50px auto;
+	padding: 20px 5%;
+	width: 60%;
 	background-color: #fff;
 }
-#menu a:hover {
-	color: #fff;
-	background-color: #666;
-	border-radius: 4px;
+#menu {
+	background-color: #013e5b;
+}
+#menu_content {
+	width: 60%;
+	margin: 0 auto;
+	padding: 5px 0;
+}
+#menu a {
+	margin-right: 5px;
+	color: #eee;
+	text-decoration: none;
+	padding: 4px 12px;
+	display: inline-block;
+	font-size: 14px;
+}
+#menu a:hover, #menu .active {
+	color: #000;
+	background-color: #0edd9a;
+	border-radius: 3px;
 }
 img {
 	display: block;
