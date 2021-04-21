@@ -54,15 +54,15 @@ def fancy_introduction(port):
 def open_static(filename, mode='rb'):
     '''Opens static file and returns it\'s binary representation'''
     try:
-        ts = os.stat(filename).st_mtime
-        last_modified = datetime.datetime \
-            .utcfromtimestamp(ts) \
-            .strftime('%a, %d %b %Y %H:%M:%S GMT')
         with open(filename, mode) as f:
             data = f.read()
+            ts = os.stat(filename).st_mtime
+            last_modified = datetime.datetime \
+                .utcfromtimestamp(ts) \
+                .strftime('%a, %d %b %Y %H:%M:%S GMT')
             return data, last_modified
     except:
-        return b''
+        return b'', 0
 
 def build_header(status, file_type, last_modified):
     '''
@@ -99,7 +99,7 @@ def prepare_response(filename):
     if body:
         header = build_header('200', file_type, last_modified)
     else:
-        header = build_header('404', file_type)
+        header = build_header('404', file_type, last_modified)
 
     return header + body
 
