@@ -37,10 +37,12 @@ routes = {
 
 def fancy_introduction(port):
     # Confirmation that server has started
+    hostname = socket.gethostname()
+    ip = socket.gethostbyname(hostname)
     server = f' Python Webserver v.{__version__}'
     checkmark = b'\xe2\x9c\x93'.decode()
     status = f' Status: {checkmark}'
-    addr = f' Address: http://localhost:{port}'
+    addr = f' Address: http://{ip}:{port}'
 
     print('\n')
     print(u"\u250c" + u"\u2500" * 36+ u"\u2510")
@@ -120,7 +122,6 @@ def run():
     Function opens socket on hostname:port and starts to listen for requests
     '''
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-
         # Host (0.0.0.0 means for any ip address)
         host = '0.0.0.0'
         # Take port from command line
@@ -129,6 +130,7 @@ def run():
         s.bind((host, port))
         # Listen for incoming messages
         s.listen()
+
         # Shows introduction to the terminal
         fancy_introduction(port)
         # Server is going to run until something breaks
