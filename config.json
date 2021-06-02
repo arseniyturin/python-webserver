@@ -4,7 +4,6 @@
     "400": "HTTP/1.1 400 Bad Request",
     "404": "HTTP/1.1 404 Not Found"
   },
-
   "content_type": {
     "html": "Content-Type: text/html; charset=utf-8",
     "jpg": "Content-Type: image/jpeg",
@@ -13,11 +12,9 @@
     "js": "Content-Type: text/javascript",
     "ico": "Content-Type: image/x-icon"
   },
-
   "routes": {
     "html": "html"
   },
-
-  "sep": "\r\n"
-
+  "sep": "\r\n",
+  "default_port": 1200
 }

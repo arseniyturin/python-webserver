@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# AsyncIO implementation
+#
+#
 
 __author__ = 'Arseniy Tyurin'
 __version__ = '0.1'
 __license__ = 'MIT'
 
-import os, sys, re, time, datetime, json, socket, threading
+import os, sys, re, time, datetime, json, socket, threading, webbrowser
 
 def fancy_introduction(port):
     '''Confirmation that server has started'''
@@ -61,6 +64,8 @@ def parse_request(request):
     method and protocol are not used anywhere in the code,
     but will be useful in the future
     '''
+    print(request.decode())
+    GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     headers = request.decode().split('\r\n')
     method, request, protocol = headers[0].split(' ')
     if request == '/': request = '/index.html'
@@ -94,11 +99,11 @@ def prepare_response(method, path, file_type):
     return header + body
 
 def process_request(msg, client):
-        method, path, file_type = parse_request(msg)
-        response = prepare_response(method, path, file_type)
-        client.send(response)
-        client.close()
-        print(f'({time.ctime()}) - {method} - {path}')
+    method, path, file_type = parse_request(msg)
+    response = prepare_response(method, path, file_type)
+    client.send(response)
+    client.close()
+    print(f'({time.ctime()}) - {method} - {path}')
 
 def run():
     '''
@@ -109,13 +114,18 @@ def run():
         # Host (0.0.0.0 means for any ip address)
         host = '0.0.0.0'
         # Take port from command line
-        port = int(sys.argv[1])
+        try:
+            port = int(sys.argv[1])
+        except:
+            port = config['default_port']
+            print(f'Missing or Invalid port. Setting to default port {port}')
         # Bind socket to the desired address
         s.bind((host, port))
         # Listen for incoming messages
         s.listen()
         # Shows introduction to the terminal
         fancy_introduction(port)
+        webbrowser.open(f'http://localhost:{port}')
         # Server is going to run until something breaks
         while True:
             # Client connected
@@ -125,8 +135,7 @@ def run():
             msg = client.recv(4096)
             # if server go appropriate request -> create response
             if msg:
-                threading.Thread(target=process_request, args=(msg,client)).start()
-                #process_request(msg, client)
+                threading.Thread(target=process_request, args=(msg, client)).start()
 
 # Load server configuration
 config = load_config('config.json')
