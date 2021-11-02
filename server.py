@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# AsyncIO implementation
-#
-#
 
-__author__ = 'Arseniy Tyurin'
+__author__ = 'Arseny Turin'
 __version__ = '0.1'
 __license__ = 'MIT'
 
@@ -64,8 +61,6 @@ def parse_request(request):
     method and protocol are not used anywhere in the code,
     but will be useful in the future
     '''
-    print(request.decode())
-    GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     headers = request.decode().split('\r\n')
     method, request, protocol = headers[0].split(' ')
     if request == '/': request = '/index.html'
@@ -133,16 +128,16 @@ def run():
             # Read clients message (suppose to be HTTP GET request)
             # 4096 is arbitrary, you can go as much as 65535
             msg = client.recv(4096)
-            # if server go appropriate request -> create response
+            # if the server got an appropriate request -> create response
             if msg:
                 threading.Thread(target=process_request, args=(msg, client)).start()
 
 # Load server configuration
-config = load_config('config.json')
-http_status = config['http_status']
+config       = load_config('config.json')
+http_status  = config['http_status']
 content_type = config['content_type']
-routes = config['routes']
-sep = config['sep'].encode()
+routes       = config['routes']
+sep          = config['sep'].encode()
 
 if __name__ == '__main__':
     run()
